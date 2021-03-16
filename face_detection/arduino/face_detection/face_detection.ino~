@@ -19,7 +19,6 @@ void loop() {
   // put your main code here, to run repeatedly: 
   /* angle = analogRead(pot_pin); */
   /* angle = map(angle, 0, 1023, 0, 180); */
-  
   angle = Serial.read();
   my_servo.write(angle);
   delay(20);
