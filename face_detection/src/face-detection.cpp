@@ -1,3 +1,4 @@
+#include <iostream>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/objdetect.hpp>
@@ -11,7 +12,12 @@ int main(int argc, char *argv[])
   // Loading the cascade classifier trained  on the data from the .xml file
   cv::CascadeClassifier face_cascade = cv::CascadeClassifier("../haarcascade_frontalface_default.xml");
   // Reading the input image
-  image = cv::imread("../eu.jpg");
+  image = cv::imread("/home/bacamartes/Documents/UFRN/2020_2/PDI/projeto_final/face_detection/eu.jpg");
+
+  if (!image.data)
+	std::cerr << "Couldn't open the requested image. Exiting!" << std::endl;
+
   cv::imshow("Face detection", image);
+  cv::waitKey();
   return 0;
 }
