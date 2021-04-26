@@ -41,7 +41,8 @@ int main(int argc, char *argv[])
   //Load the dlib face detector
   dlib::frontal_face_detector faceDetector = dlib::get_frontal_face_detector();
 
-  //Load the dlib face landmark detector
+  //Load the dlib face landmark detector and initialize the shape predictor
+
   dlib::shape_predictor faceLandmarkDetector ;
   dlib::deserialize("../../dlibAndModel/shape_predictor_68_face_landmarks.dat") >> faceLandmarkDetector;
 
@@ -53,25 +54,38 @@ int main(int argc, char *argv[])
 
   while (true) {
 	cap.read(image);
-	cv::cvtColor(image, gray_image, cv::COLOR_BGR2GRAY);
 
+	// Checking if anything was captured by the camera
 	if (!image.data)
 	  std::cerr << "Couldn't open the requested image. Exiting!" << std::endl;
+
+	// Convert the image from the openCV format to dlib format
+
+	dlib::cv_image<dlib::bgr_pixel> dlibImage(image);
+	// cv::cvtColor(image, gray_image, cv::COLOR_BGR2GRAY);
+
+	//Detect faces in the image and print the number of faces detected
+    std::vector<dlib::rectangle> faces = faceDetector(dlibImage);
+	std::cout << "Number of faces detected:" << faces.size() << std::endl;
+
   
+	/* This whole commented region below was part of the original haarscascade algorithm without using dlib
+	//	
 	// Detecting the faces on the grayscale image
-	face_cascade.detectMultiScale(gray_image, faces, 1.1, 4);
+	// face_cascade.detectMultiScale(gray_image, faces, 1.1, 4);
 
-	for (int i = 0; i < faces.size(); i++) {
-	  cv::rectangle(image, cv::Rect(faces[i].x, faces[i].y, faces[i].width, faces[i].height), cv::Scalar(255, 0, 0), 2);
-	  if (i < 2) {
-		aux_matrix[i] = image({faces[i].y, faces[i].y + faces[i].height}, {faces[i].x, faces[i].x + faces[i].width});
-	  }
-	}
+	// for (int i = 0; i < faces.size(); i++) {
+	//   cv::rectangle(image, cv::Rect(faces[i].x, faces[i].y, faces[i].width, faces[i].height), cv::Scalar(255, 0, 0), 2);
+	//   if (i < 2) {
+	// 	aux_matrix[i] = image({faces[i].y, faces[i].y + faces[i].height}, {faces[i].x, faces[i].x + faces[i].width});
+	//   }
+	// }
 
-	if (faces.size() == 2) {
-	  image({faces[1].y, faces[1].y + faces[1].height}, {faces[1].x, faces[1].x + faces[1].width}) = aux_matrix[2];
-	  image({faces[2].y, faces[2].y + faces[2].height}, {faces[2].x, faces[2].x + faces[2].width}) = aux_matrix[1];
-	}
+	// if (faces.size() == 2) {
+	//   image({faces[1].y, faces[1].y + faces[1].height}, {faces[1].x, faces[1].x + faces[1].width}) = aux_matrix[2];
+	//   image({faces[2].y, faces[2].y + faces[2].height}, {faces[2].x, faces[2].x + faces[2].width}) = aux_matrix[1];
+	// }
+	*/
 
 	cv::imshow("Face detection", image);
 	// cv::imshow("Teste", aux_matrix_1);
