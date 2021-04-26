@@ -11,6 +11,22 @@
 #include <dlib/image_processing/frontal_face_detector.h>
 #include <stdexcept>
 
+void drawFaceLandmarks(cv::Mat &image, dlib::full_object_detection faceLandmark){
+
+    //Loop over all face landmarks
+    for(int i=0; i< faceLandmark.num_parts(); i++){
+        int x = faceLandmark.part(i).x();
+        int y = faceLandmark.part(i).y();
+		std::string text = std::to_string(i+1);
+
+        //Draw a small circle at face landmark over the image using opencv
+        circle(image, cv::Point(x, y), 1, cv::Scalar(0, 0, 255), 2, cv::LINE_AA );
+
+        //Draw text at face landmark to show index of current face landmark over the image using opencv
+        putText(image, text, cv::Point(x, y), cv::FONT_HERSHEY_SIMPLEX, 0.3, cv::Scalar(255, 0, 0), 1);
+    }
+}
+
 int main(int argc, char *argv[])
 {
   cv::Mat image, gray_image;
@@ -22,9 +38,15 @@ int main(int argc, char *argv[])
 	aux = cv::Mat::zeros(250, 250, CV_8UC3);
 
   cv::namedWindow("Face detection", cv::WINDOW_AUTOSIZE);
+  //Load the dlib face detector
+  dlib::frontal_face_detector faceDetector = dlib::get_frontal_face_detector();
 
-  // Loading the cascade classifier trained  on the data from the .xml file
-  cv::CascadeClassifier face_cascade = cv::CascadeClassifier("/home/bacamartes/Documents/UFRN/2020_2/PDI/projeto_final/face_detection/haarcascade_frontalface_default.xml");
+  //Load the dlib face landmark detector
+  dlib::shape_predictor faceLandmarkDetector ;
+  dlib::deserialize("../../dlibAndModel/shape_predictor_68_face_landmarks.dat") >> faceLandmarkDetector;
+
+  // // Loading the cascade classifier trained  on the data from the .xml file
+  // cv::CascadeClassifier face_cascade = cv::CascadeClassifier("/home/bacamartes/Documents/UFRN/2020_2/PDI/projeto_final/face_detection/haarcascade_frontalface_default.xml");
 
   // Reading the input image
   cv::VideoCapture cap ("/dev/video0");
