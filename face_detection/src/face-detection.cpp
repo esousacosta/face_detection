@@ -1,5 +1,7 @@
+/* The landmark detection and drawing parts of this code are inspired by a very similar code developed by anishakd4. */
 #include <iostream>
 #include <opencv2/core/hal/interface.h>
+#include <opencv2/core/types.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
@@ -10,22 +12,26 @@
 #include <dlib/image_processing.h>
 #include <dlib/image_processing/frontal_face_detector.h>
 #include <stdexcept>
+#include <vector>
 
-void drawFaceLandmarks(cv::Mat &image, dlib::full_object_detection faceLandmark){
-
-    //Loop over all face landmarks
-    for(int i=0; i< faceLandmark.num_parts(); i++){
-        int x = faceLandmark.part(i).x();
-        int y = faceLandmark.part(i).y();
-		std::string text = std::to_string(i+1);
-
-        //Draw a small circle at face landmark over the image using opencv
-        circle(image, cv::Point(x, y), 1, cv::Scalar(0, 0, 255), 2, cv::LINE_AA );
-
-        //Draw text at face landmark to show index of current face landmark over the image using opencv
-        putText(image, text, cv::Point(x, y), cv::FONT_HERSHEY_SIMPLEX, 0.3, cv::Scalar(255, 0, 0), 1);
-    }
+std::vector<cv::Point2f> drawFaceLandmarks(cv::Mat &image, dlib::full_object_detection faceLandmark)
+{
+  std::vector<cv::Point2f> points;
+  //Loop over all face landmarks
+  for (int i=0; i< faceLandmark.num_parts(); i++) {
+	int x = faceLandmark.part(i).x();
+	int y = faceLandmark.part(i).y();
+	std::string text = std::to_string(i+1);
+	points.push_back(cv::Point2f(x, y));
+	//Draw a small circle at face landmark over the image using opencv
+	circle(image, cv::Point(x, y), 1, cv::Scalar(0, 0, 255), 2, cv::LINE_AA );
+	//Draw text at face landmark to show index of current face landmark over the image using opencv
+	putText(image, text, cv::Point(x, y), cv::FONT_HERSHEY_SIMPLEX, 0.3, cv::Scalar(255, 0, 0), 1);
+  }
+  return points;
 }
+
+
 
 int main(int argc, char *argv[])
 {
@@ -33,11 +39,16 @@ int main(int argc, char *argv[])
   int k = 0;
   std::vector<cv::Rect> faces;
   std::vector<cv::Mat> aux_matrix(2);
+  std::vector<dlib::full_object_detection> facelandmarks;
+  std::vector<std::vector<cv::Point2f>> points;
+  std::vector<std::vector<cv::Point2f>> hulls;
+  std::vector<cv::Point2f> hull;
 
   for (cv::Mat& aux : aux_matrix)
 	aux = cv::Mat::zeros(250, 250, CV_8UC3);
 
   cv::namedWindow("Face detection", cv::WINDOW_AUTOSIZE);
+
   //Load the dlib face detector
   dlib::frontal_face_detector faceDetector = dlib::get_frontal_face_detector();
 
@@ -56,7 +67,9 @@ int main(int argc, char *argv[])
 
   while (true) {
 	static cv::Mat image;
+	static cv::Mat copied_image;
 	cap.read(image);
+	copied_image = image.clone();
 
 	// Checking if anything was captured by the camera
 	if (!image.data)
@@ -74,7 +87,7 @@ int main(int argc, char *argv[])
 	std::cout << "Number of faces detected:" << faces.size() << std::endl;
 
 	//Get Face landmarks of all detected faces
-	std::vector<dlib::full_object_detection> facelandmarks;
+
 	for(int i=0; i<faces.size(); i++){
 
 	  //Get the face landmark and print number of landmarks detected
@@ -85,10 +98,15 @@ int main(int argc, char *argv[])
 	  facelandmarks.push_back(facelandmark);
 
 	  //Draw landmarks on image
-	  drawFaceLandmarks(image, facelandmark);
+	  points.push_back(drawFaceLandmarks(image, facelandmark));
 
 	  //Write face Landmarks to a file on disk to analyze
 	  std::string landmarksFilename = "face_landmarks_" + std::to_string(i+1) + ".txt";
+	}
+
+	for (auto element: points) {
+	  cv::convexHull(element, hull);
+	  hulls.push_back(hull);
 	}
 
   
