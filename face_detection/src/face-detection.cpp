@@ -44,6 +44,8 @@ int main(int argc, char *argv[])
   //Load the dlib face landmark detector and initialize the shape predictor
 
   dlib::shape_predictor faceLandmarkDetector ;
+
+
   dlib::deserialize("../../dlibAndModel/shape_predictor_68_face_landmarks.dat") >> faceLandmarkDetector;
 
   // // Loading the cascade classifier trained  on the data from the .xml file
@@ -53,6 +55,7 @@ int main(int argc, char *argv[])
   cv::VideoCapture cap ("/dev/video0");
 
   while (true) {
+	static cv::Mat image;
 	cap.read(image);
 
 	// Checking if anything was captured by the camera
@@ -61,12 +64,32 @@ int main(int argc, char *argv[])
 
 	// Convert the image from the openCV format to dlib format
 
-	dlib::cv_image<dlib::bgr_pixel> dlibImage(image);
+	IplImage ipl_img = cvIplImage(image);
+	dlib::cv_image<dlib::bgr_pixel> dlibImage(&ipl_img);
+	// dlib::cv_image<dlib::bgr_pixel> dlibImage(&image);
 	// cv::cvtColor(image, gray_image, cv::COLOR_BGR2GRAY);
 
 	//Detect faces in the image and print the number of faces detected
     std::vector<dlib::rectangle> faces = faceDetector(dlibImage);
 	std::cout << "Number of faces detected:" << faces.size() << std::endl;
+
+	//Get Face landmarks of all detected faces
+	std::vector<dlib::full_object_detection> facelandmarks;
+	for(int i=0; i<faces.size(); i++){
+
+	  //Get the face landmark and print number of landmarks detected
+	  dlib::full_object_detection facelandmark = faceLandmarkDetector(dlibImage, faces[i]);
+	  std::cout<< "Number of face landmarks detected:" << facelandmark.num_parts() << std::endl;
+
+	  //Push face landmark to array of All face's landmarks array
+	  facelandmarks.push_back(facelandmark);
+
+	  //Draw landmarks on image
+	  drawFaceLandmarks(image, facelandmark);
+
+	  //Write face Landmarks to a file on disk to analyze
+	  std::string landmarksFilename = "face_landmarks_" + std::to_string(i+1) + ".txt";
+	}
 
   
 	/* This whole commented region below was part of the original haarscascade algorithm without using dlib
