@@ -1,4 +1,7 @@
 /* The landmark detection and drawing parts of this code are inspired by a very similar code developed by anishakd4. */
+/* The Delaunay Triangulation and the face copying portions of the code were, mostly, taken from
+ Learnopencv's "Face swap" (https://github.com/spmallick/learnopencv/tree/master/FaceSwap) repository" */
+
 #include <iostream>
 #include <opencv2/core/hal/interface.h>
 #include <opencv2/core/types.hpp>
@@ -31,6 +34,42 @@ std::vector<cv::Point2f> drawFaceLandmarks(cv::Mat &image, dlib::full_object_det
   return points;
 }
 
+// Here the Delaunay triangles are calculated for the given set of points, and the indexes for the 3 points of each
+// triangle are stored in the delaunayTri argument.
+static void calculateDelaunayTriangles(cv::Rect rectangle, std::vector<cv::Point2f> &points, std::vector< std::vector<int> > &delaunayTri)
+{
+  cv::Subdiv2D subdivs(rectangle);
+
+  // Inserting each point in points inside the subdiv object
+  for (auto& element: points) {
+	subdivs.insert(element);
+	std::vector<cv::Vec6f> triangleList;
+	subdivs.getTriangleList(triangleList);
+	std::vector<cv::Point2f> pt(3);
+	std::vector<int> ind(3);
+
+	for( int i = 0; i < triangleList.size(); i++ ) {
+	  cv::Vec6f t = triangleList[i];
+	  pt[0] = cv::Point2f(t[0], t[1]);
+	  pt[1] = cv::Point2f(t[2], t[3]);
+	  pt[2] = cv::Point2f(t[4], t[5 ]);
+
+	  if (rectangle.contains(pt[0]) && rectangle.contains(pt[1]) && rectangle.contains(pt[2])) {
+		for(int j = 0; j < 3; j++)
+		  for(int k = 0; k < points.size(); k++)
+			if(abs(pt[j].x - points[k].x) < 1.0 && abs(pt[j].y - points[k].y) < 1)						
+			  ind[j] = k;					
+
+		// The indexes for each triangle are then pushed into the delaunayTri(angles) vector
+		// to be used during the mask creating phase.
+		delaunayTri.push_back(ind);
+	  }
+
+	}
+
+  }
+
+}
 
 
 int main(int argc, char *argv[])
@@ -40,9 +79,10 @@ int main(int argc, char *argv[])
   std::vector<cv::Rect> faces;
   std::vector<cv::Mat> aux_matrix(2);
   std::vector<dlib::full_object_detection> facelandmarks;
-  std::vector<std::vector<cv::Point2f>> points;
-  std::vector<std::vector<cv::Point2f>> hulls;
+  std::vector< std::vector<cv::Point2f> > points;
+  std::vector< std::vector<cv::Point2f> > hulls;
   std::vector<cv::Point2f> hull;
+  std::vector< std::vector<int> > dt;
 
   for (cv::Mat& aux : aux_matrix)
 	aux = cv::Mat::zeros(250, 250, CV_8UC3);
@@ -104,12 +144,15 @@ int main(int argc, char *argv[])
 	  std::string landmarksFilename = "face_landmarks_" + std::to_string(i+1) + ".txt";
 	}
 
-	for (auto element: points) {
-	  cv::convexHull(element, hull);
-	  hulls.push_back(hull);
-	}
+	if (faces.size() == 2) {
+	  for (auto element: points) {
+		cv::convexHull(element, hull);
+		hulls.push_back(hull);
+	  }
 
-  
+	  cv::Rect rect(0, 0, copied_image.cols, copied_image.rows);
+	  calculateDelaunayTriangles(rect, hulls[0], dt);
+	}
 	/* This whole commented region below was part of the original haarscascade algorithm without using dlib
 	//	
 	// Detecting the faces on the grayscale image
@@ -129,6 +172,9 @@ int main(int argc, char *argv[])
 	*/
 
 	cv::imshow("Face detection", image);
+	hulls.clear();
+	points.clear();
+	dt.clear();
 	// cv::imshow("Teste", aux_matrix_1);
 	k = cv::waitKey(10);
 
