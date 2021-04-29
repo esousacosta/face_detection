@@ -125,16 +125,21 @@ void warpTriangle(cv::Mat &img1, cv::Mat &img2, std::vector<cv::Point2f> &t1, st
 	
   // Here I'm finally patching the second image by adding the content from the
   // original one. This is done for each of the delaunay triangle's regions.
+
+  std::cout << "Passei 1!" << std::endl;
   multiply(img2Rect, mask, img2Rect);
+  std::cout << "Passei 2!" << std::endl;
   multiply(img2(r2), cv::Scalar(1.0,1.0,1.0) - mask, img2(r2));
+  std::cout << "Passei 3!" << std::endl;
   img2(r2) = img2(r2) + img2Rect;
+  std::cout << "Passei 4!" << std::endl;
 	
 }
 
 
 int main(int argc, char *argv[])
 {
-  cv::Mat image, gray_image;
+  static cv::Mat image, gray_image;
   int k = 0;
   std::vector<cv::Rect> faces;
   std::vector<cv::Mat> aux_matrix(2);
@@ -143,7 +148,11 @@ int main(int argc, char *argv[])
   std::vector< std::vector<cv::Point2f> > hulls;
   std::vector<cv::Point2f> hull;
   std::vector< std::vector<int> > dt;
+  std::vector<cv::Point> hull8U;
 
+  static cv::Mat copied_image;
+  static cv::Mat destination_image;
+  
   for (cv::Mat& aux : aux_matrix)
 	aux = cv::Mat::zeros(250, 250, CV_8UC3);
 
@@ -166,12 +175,9 @@ int main(int argc, char *argv[])
   cv::VideoCapture cap ("/dev/video0");
 
   while (true) {
-	static cv::Mat image;
-	static cv::Mat copied_image;
-	static cv::Mat destination_image;
 	cap.read(image);
-	copied_image = image.clone();
-	destination_image = image.clone();
+	image.copyTo(copied_image);//cv::Mat::zeros(copied_image.rows, copied_image.cols, CV_32F);//image.clone();
+	// destination_image = cv::Mat::zeros(copied_image.rows, copied_image.cols, CV_32F);//image.clone();
 
 	// Checking if anything was captured by the camera
 	if (!image.data)
@@ -210,6 +216,9 @@ int main(int argc, char *argv[])
 	std::cout << "Passei do desenho das máscaras..." << std::endl;
 	
 	if (faces.size() == 2) {
+	  image.convertTo(image, CV_32F);
+	  copied_image.convertTo(copied_image, CV_32F);
+
 	  for (auto element: points) {
 		cv::convexHull(element, hull);
 		hulls.push_back(hull);
@@ -243,25 +252,34 @@ int main(int argc, char *argv[])
 	  std::cout << "Passei do cálculo da transformada afim e do warpTriangle..." << std::endl;
 
 	  // Calculate mask
-	  std::vector<cv::Point> hull8U;
-	  for(int i = 0; i < hulls[1].size(); i++)
+	  for(int i = 0; i < hulls[0].size(); i++)
 		{
-		  cv::Point pt(hulls[1][i].x, hulls[1][i].y);
+		  cv::Point pt(hulls[0][i].x, hulls[0][i].y);
 		  hull8U.push_back(pt);
 		}
 
-	  cv::Mat mask = cv::Mat::zeros(copied_image.rows, copied_image.cols, copied_image.depth());
+	  std::cout << "Já calculei o novo hull em 8U" << std::endl;
+	  cv::Mat mask = cv::Mat::zeros(copied_image.rows, copied_image.cols, CV_32F);
 	  fillConvexPoly(mask, &hull8U[0], hull8U.size(), cv::Scalar(255,255,255));
 
+	  std::cout << "Quase clonando..." << std::endl;
 	  // Clone seamlessly.
-	  cv::Rect r = boundingRect(hulls[1]);
+	  cv::Rect r = boundingRect(hulls[0]);
 	  cv::Point center = (r.tl() + r.br()) / 2;
+
+	  std::cout << "Clonei!" << std::endl;
 	
 	  cv::Mat output;
 	  copied_image.convertTo(copied_image, CV_8UC3);
-	  cv::seamlessClone(copied_image, destination_image, mask, center, output, cv::NORMAL_CLONE);
+	  std::cout << "Converti!" << std::endl;
+	  std::cout << CV_VERSION << std::endl;
 
-	  cv::imshow("clonned", output);
+	  // cv::imshow("clonned", copied_image);
+
+	  // cv::seamlessClone(copied_image, destination_image, mask, center, output, cv::NORMAL_CLONE);
+	  std::cout << "Seamless cloning feito!" << std::endl;
+
+	  // cv::imshow("clonned", output);
 	}
 	/* This whole commented region below was part of the original haarscascade algorithm without using dlib
 	//	
@@ -281,10 +299,14 @@ int main(int argc, char *argv[])
 	// }
 	*/
 
-	cv::imshow("Face detection", image);
+	cv::imshow("Face detection", copied_image);
 	hulls.clear();
 	points.clear();
 	dt.clear();
+	hull.clear();
+	hull8U.clear();
+	faces.clear();
+	facelandmarks.clear();
 	// cv::imshow("Teste", aux_matrix_1);
 	k = cv::waitKey(10);
 
