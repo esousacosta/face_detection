@@ -28,9 +28,9 @@ std::vector<cv::Point2f> drawFaceLandmarks(cv::Mat &image, dlib::full_object_det
 	std::string text = std::to_string(i+1);
 	points.push_back(cv::Point2f(x, y));
 	//Draw a small circle at face landmark over the image using opencv
-	circle(image, cv::Point(x, y), 1, cv::Scalar(0, 0, 255), 2, cv::LINE_AA );
+	// circle(image, cv::Point(x, y), 1, cv::Scalar(0, 0, 255), 2, cv::LINE_AA );
 	//Draw text at face landmark to show index of current face landmark over the image using opencv
-	putText(image, text, cv::Point(x, y), cv::FONT_HERSHEY_SIMPLEX, 0.3, cv::Scalar(255, 0, 0), 1);
+	// putText(image, text, cv::Point(x, y), cv::FONT_HERSHEY_SIMPLEX, 0.3, cv::Scalar(255, 0, 0), 1);
   }
   return points;
 }
@@ -41,26 +41,30 @@ std::vector<cv::Point2f> drawFaceLandmarks(cv::Mat &image, dlib::full_object_det
 static void calculateDelaunayTriangles(cv::Rect rectangle, std::vector<cv::Point2f> &points, std::vector< std::vector<int> > &delaunayTri)
 {
   cv::Subdiv2D subdivs(rectangle);
+  std::vector<cv::Vec6f> triangleList;
+  std::vector<cv::Point2f> pt(3);
+  std::vector<int> ind(3);
 
   // Inserting each point in points inside the subdiv object
   for (auto& element: points) {
 	subdivs.insert(element);
-	std::vector<cv::Vec6f> triangleList;
 	subdivs.getTriangleList(triangleList);
-	std::vector<cv::Point2f> pt(3);
-	std::vector<int> ind(3);
 
 	for( int i = 0; i < triangleList.size(); i++ ) {
 	  cv::Vec6f t = triangleList[i];
-	  pt[0] = cv::Point2f(t[0], t[1]);
-	  pt[1] = cv::Point2f(t[2], t[3]);
-	  pt[2] = cv::Point2f(t[4], t[5 ]);
+	  pt.push_back(cv::Point2f(t[0], t[1]));
+	  pt.push_back(cv::Point2f(t[2], t[3]));
+	  pt.push_back(cv::Point2f(t[4], t[5]));
+	  // pt[0] = cv::Point2f(t[0], t[1]);
+	  // pt[1] = cv::Point2f(t[2], t[3]);
+	  // pt[2] = cv::Point2f(t[4], t[5 ]);
 
 	  if (rectangle.contains(pt[0]) && rectangle.contains(pt[1]) && rectangle.contains(pt[2])) {
 		for(int j = 0; j < 3; j++)
 		  for(int k = 0; k < points.size(); k++)
 			if(abs(pt[j].x - points[k].x) < 1.0 && abs(pt[j].y - points[k].y) < 1)						
-			  ind[j] = k;					
+			  // ind[j] = k;					
+			  ind.push_back(k);
 
 		// The indexes for each triangle are then pushed into the delaunayTri(angles) vector
 		// to be used during the mask creating phase.
@@ -69,6 +73,9 @@ static void calculateDelaunayTriangles(cv::Rect rectangle, std::vector<cv::Point
 
 	}
 
+	triangleList.clear();
+	pt.clear();
+	ind.clear();
   }
 
 }
@@ -126,14 +133,13 @@ void warpTriangle(cv::Mat &img1, cv::Mat &img2, std::vector<cv::Point2f> &t1, st
   // Here I'm finally patching the second image by adding the content from the
   // original one. This is done for each of the delaunay triangle's regions.
 
-  std::cout << "Passei 1!" << std::endl;
   multiply(img2Rect, mask, img2Rect);
-  std::cout << "Passei 2!" << std::endl;
   multiply(img2(r2), cv::Scalar(1.0,1.0,1.0) - mask, img2(r2));
-  std::cout << "Passei 3!" << std::endl;
   img2(r2) = img2(r2) + img2Rect;
-  std::cout << "Passei 4!" << std::endl;
 	
+  t1Rect.clear();
+  t2Rect.clear();
+  t2RectInt.clear();
 }
 
 
@@ -141,7 +147,7 @@ int main(int argc, char *argv[])
 {
   static cv::Mat image, gray_image;
   int k = 0;
-  std::vector<cv::Rect> faces;
+  std::vector<dlib::rectangle> faces;
   std::vector<cv::Mat> aux_matrix(2);
   std::vector<dlib::full_object_detection> facelandmarks;
   std::vector< std::vector<cv::Point2f> > points;
@@ -149,6 +155,8 @@ int main(int argc, char *argv[])
   std::vector<cv::Point2f> hull;
   std::vector< std::vector<int> > dt;
   std::vector<cv::Point> hull8U;
+  std::vector<cv::Point2f> t1, t2;
+  cv::Mat mask;
 
   static cv::Mat copied_image;
   static cv::Mat destination_image;
@@ -177,6 +185,7 @@ int main(int argc, char *argv[])
   while (true) {
 	cap.read(image);
 	image.copyTo(copied_image);//cv::Mat::zeros(copied_image.rows, copied_image.cols, CV_32F);//image.clone();
+	image.copyTo(destination_image);
 	// destination_image = cv::Mat::zeros(copied_image.rows, copied_image.cols, CV_32F);//image.clone();
 
 	// Checking if anything was captured by the camera
@@ -191,7 +200,8 @@ int main(int argc, char *argv[])
 	// cv::cvtColor(image, gray_image, cv::COLOR_BGR2GRAY);
 
 	//Detect faces in the image and print the number of faces detected
-    std::vector<dlib::rectangle> faces = faceDetector(dlibImage);
+    // std::vector<dlib::rectangle> faces = faceDetector(dlibImage);
+	faces = faceDetector(dlibImage);
 	std::cout << "Number of faces detected:" << faces.size() << std::endl;
 
 	//Get Face landmarks of all detected faces
@@ -218,6 +228,7 @@ int main(int argc, char *argv[])
 	if (faces.size() == 2) {
 	  image.convertTo(image, CV_32F);
 	  copied_image.convertTo(copied_image, CV_32F);
+	  destination_image.convertTo(destination_image, CV_32F);
 
 	  for (auto element: points) {
 		cv::convexHull(element, hull);
@@ -236,8 +247,6 @@ int main(int argc, char *argv[])
 
 	  for (int i = 0; i < dt.size(); i++) {
 
-		std::vector<cv::Point2f> t1, t2;
-
 		for (int j = 0; j < 3; j++) {
 
 		  t1.push_back(hulls[0][dt[i][j]]);
@@ -247,7 +256,10 @@ int main(int argc, char *argv[])
 		// After finishing to collect the equivalente points of both contours,
 		// it's time to apply the warping to the copy of the second image.
 		warpTriangle(image, copied_image, t1, t2);
+		t1.clear();
+		t2.clear();
 	  }
+
 
 	  std::cout << "Passei do cálculo da transformada afim e do warpTriangle..." << std::endl;
 
@@ -259,7 +271,7 @@ int main(int argc, char *argv[])
 		}
 
 	  std::cout << "Já calculei o novo hull em 8U" << std::endl;
-	  cv::Mat mask = cv::Mat::zeros(copied_image.rows, copied_image.cols, CV_32F);
+	  mask = cv::Mat::zeros(copied_image.rows, copied_image.cols, copied_image.depth());
 	  fillConvexPoly(mask, &hull8U[0], hull8U.size(), cv::Scalar(255,255,255));
 
 	  std::cout << "Quase clonando..." << std::endl;
@@ -269,17 +281,19 @@ int main(int argc, char *argv[])
 
 	  std::cout << "Clonei!" << std::endl;
 	
-	  cv::Mat output;
 	  copied_image.convertTo(copied_image, CV_8UC3);
+	  mask.convertTo(mask, CV_8UC3);
+	  destination_image.convertTo(destination_image, CV_8UC3);
 	  std::cout << "Converti!" << std::endl;
 	  std::cout << CV_VERSION << std::endl;
 
-	  // cv::imshow("clonned", copied_image);
+	  cv::imshow("clonned", mask);
 
-	  // cv::seamlessClone(copied_image, destination_image, mask, center, output, cv::NORMAL_CLONE);
+	  cv::Mat output;
+	  cv::seamlessClone(copied_image, destination_image, mask, center, output, cv::NORMAL_CLONE);
 	  std::cout << "Seamless cloning feito!" << std::endl;
 
-	  // cv::imshow("clonned", output);
+	  cv::imshow("clonned", output);
 	}
 	/* This whole commented region below was part of the original haarscascade algorithm without using dlib
 	//	
@@ -307,6 +321,7 @@ int main(int argc, char *argv[])
 	hull8U.clear();
 	faces.clear();
 	facelandmarks.clear();
+	aux_matrix.clear();
 	// cv::imshow("Teste", aux_matrix_1);
 	k = cv::waitKey(10);
 
