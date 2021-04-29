@@ -3,6 +3,7 @@
  Learnopencv's "Face swap" (https://github.com/spmallick/learnopencv/tree/master/FaceSwap) repository" */
 
 #include <iostream>
+#include <opencv2/core.hpp>
 #include <opencv2/core/hal/interface.h>
 #include <opencv2/core/types.hpp>
 #include <opencv2/highgui.hpp>
@@ -70,7 +71,6 @@ static void calculateDelaunayTriangles(cv::Rect rectangle, std::vector<cv::Point
 		// to be used during the mask creating phase.
 		delaunayTri.push_back(ind);
 	  }
-
 	}
 
 	triangleList.clear();
@@ -228,7 +228,7 @@ int main(int argc, char *argv[])
 	if (faces.size() == 2) {
 	  image.convertTo(image, CV_32F);
 	  copied_image.convertTo(copied_image, CV_32F);
-	  destination_image.convertTo(destination_image, CV_32F);
+	  // destination_image.convertTo(destination_image, CV_32F);
 
 	  for (auto element: points) {
 		cv::convexHull(element, hull);
@@ -238,7 +238,7 @@ int main(int argc, char *argv[])
 	  std::cout << "Passei do cálculo dos hulls..." << std::endl;
 
 	  cv::Rect rect(0, 0, copied_image.cols, copied_image.rows);
-	  calculateDelaunayTriangles(rect, hulls[0], dt);
+	  calculateDelaunayTriangles(rect, hulls[1], dt);
 
 	  std::cout << "Passei do cálculo dos triangulos de delaunay..." << std::endl;
 
@@ -264,30 +264,35 @@ int main(int argc, char *argv[])
 	  std::cout << "Passei do cálculo da transformada afim e do warpTriangle..." << std::endl;
 
 	  // Calculate mask
-	  for(int i = 0; i < hulls[0].size(); i++)
+	  for(int i = 0; i < hulls[1].size(); i++)
 		{
-		  cv::Point pt(hulls[0][i].x, hulls[0][i].y);
+		  cv::Point pt(hulls[1][i].x, hulls[1][i].y);
 		  hull8U.push_back(pt);
 		}
 
 	  std::cout << "Já calculei o novo hull em 8U" << std::endl;
-	  mask = cv::Mat::zeros(copied_image.rows, copied_image.cols, copied_image.depth());
+	  mask = cv::Mat::zeros(destination_image.rows, destination_image.cols, destination_image.depth());
 	  fillConvexPoly(mask, &hull8U[0], hull8U.size(), cv::Scalar(255,255,255));
 
 	  std::cout << "Quase clonando..." << std::endl;
 	  // Clone seamlessly.
-	  cv::Rect r = boundingRect(hulls[0]);
+	  cv::Rect r = boundingRect(hulls[1]);
 	  cv::Point center = (r.tl() + r.br()) / 2;
 
 	  std::cout << "Clonei!" << std::endl;
 	
 	  copied_image.convertTo(copied_image, CV_8UC3);
-	  mask.convertTo(mask, CV_8UC3);
-	  destination_image.convertTo(destination_image, CV_8UC3);
-	  std::cout << "Converti!" << std::endl;
-	  std::cout << CV_VERSION << std::endl;
+	  // mask.convertTo(mask, CV_8UC3);
+	  // cv::cvtColor(copied_image, gray_image, cv::COLOR_BGR2GRAY);
+	  // destination_image.convertTo(destination_image, CV_8UC3);
+	  // cv::cvtColor(destination_image, destination_image, cv::COLOR_BGR2GRAY);
+	  cv::Mat temp = cv::Mat::ones(copied_image.rows, copied_image.cols, CV_8UC3);
 
-	  cv::imshow("clonned", mask);
+	  temp.copyTo(temp, mask);
+	  
+	  std::cout << "Converti!" << std::endl;
+
+	  // cv::imshow("clonned", mask);
 
 	  cv::Mat output;
 	  cv::seamlessClone(copied_image, destination_image, mask, center, output, cv::NORMAL_CLONE);
