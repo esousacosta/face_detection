@@ -30,9 +30,9 @@ std::vector<cv::Point2f> drawFaceLandmarks(cv::Mat &image, dlib::full_object_det
 	std::string text = std::to_string(i+1);
 	points.push_back(cv::Point2f(x, y));
 	//Draw a small circle at face landmark over the image using opencv
-	circle(image, cv::Point(x, y), 1, cv::Scalar(0, 0, 255), 2, cv::LINE_AA );
+	/* circle(image, cv::Point(x, y), 1, cv::Scalar(0, 0, 255), 2, cv::LINE_AA ); */
 	//Draw text at face landmark to show index of current face landmark over the image using opencv
-	putText(image, text, cv::Point(x, y), cv::FONT_HERSHEY_SIMPLEX, 0.3, cv::Scalar(255, 0, 0), 1);
+	/* putText(image, text, cv::Point(x, y), cv::FONT_HERSHEY_SIMPLEX, 0.3, cv::Scalar(255, 0, 0), 1); */
   }
   return points;
 }
@@ -157,16 +157,12 @@ int main(int argc, char *argv[])
   static std::vector< std::vector<int> > dt;
   static std::vector<cv::Point> hull8U;
   static std::vector<cv::Point2f> t1, t2;
+  static std::vector<cv::Point2f> point1, point2;
   cv::Mat mask;
 
   static cv::Mat copied_image;
   static cv::Mat destination_image;
   
-  for (cv::Mat& aux : aux_matrix)
-	aux = cv::Mat::zeros(250, 250, CV_8UC3);
-
-  cv::namedWindow("Face detection", cv::WINDOW_AUTOSIZE);
-
   //Load the dlib face detector
   dlib::frontal_face_detector faceDetector = dlib::get_frontal_face_detector();
 
@@ -229,11 +225,19 @@ int main(int argc, char *argv[])
 	  copied_image.convertTo(copied_image, CV_32F);
 	  // destination_image.convertTo(destination_image, CV_32F);
 
+	  std::vector<int> hull_index;
+	  // This for is not necessary
 	  for (auto element: points) {
-		cv::convexHull(element, hull);
-		hulls.push_back(hull);
+		cv::convexHull(element, hull_index, false, false);
 	  }
 
+	  for (int i = 0; i < hull_index.size(); ++i) {
+		point1.push_back(points[0][hull_index[i]]);
+		point2.push_back(points[1][hull_index[i]]);
+	  }
+
+	  hulls.push_back(point1);
+	  hulls.push_back(point2);
 
 	  cv::Rect rect(0, 0, copied_image.cols, copied_image.rows);
 	  calculateDelaunayTriangles(rect, hulls[1], dt);
@@ -266,7 +270,6 @@ int main(int argc, char *argv[])
 		  hull8U.push_back(pt);
 		}
 
-	  std::cout << "Já calculei o novo hull em 8U" << std::endl;
 	  mask = cv::Mat::zeros(destination_image.rows, destination_image.cols, CV_8UC3);
 	  fillConvexPoly(mask, &hull8U[0], hull8U.size(), cv::Scalar(255,255,255));
 
@@ -281,29 +284,13 @@ int main(int argc, char *argv[])
 
 	  cv::Mat output;
 	  cv::seamlessClone(copied_image, destination_image, mask, center, output, cv::NORMAL_CLONE);
-	  std::cout << "Seamless cloning feito!" << std::endl;
 
-	  cv::imshow("clonned", output);
+	  cv::imshow("cloned", output);
 	}
-	/* This whole commented region below was part of the original haarscascade algorithm without using dlib
-	//	
-	// Detecting the faces on the grayscale image
-	// face_cascade.detectMultiScale(gray_image, faces, 1.1, 4);
-
-	// for (int i = 0; i < faces.size(); i++) {
-	//   cv::rectangle(image, cv::Rect(faces[i].x, faces[i].y, faces[i].width, faces[i].height), cv::Scalar(255, 0, 0), 2);
-	//   if (i < 2) {
-	// 	aux_matrix[i] = image({faces[i].y, faces[i].y + faces[i].height}, {faces[i].x, faces[i].x + faces[i].width});
-	//   }
-	// }
-
-	// if (faces.size() == 2) {
-	//   image({faces[1].y, faces[1].y + faces[1].height}, {faces[1].x, faces[1].x + faces[1].width}) = aux_matrix[2];
-	//   image({faces[2].y, faces[2].y + faces[2].height}, {faces[2].x, faces[2].x + faces[2].width}) = aux_matrix[1];
-	// }
-	*/
 
 	cv::imshow("landmarks", image);
+	point1.clear();
+	point2.clear();
 	hulls.clear();
 	points.clear();
 	dt.clear();
@@ -312,7 +299,6 @@ int main(int argc, char *argv[])
 	faces.clear();
 	facelandmarks.clear();
 	aux_matrix.clear();
-	// cv::imshow("Teste", aux_matrix_1);
 	k = cv::waitKey(10);
 
 	if (k == 27)
