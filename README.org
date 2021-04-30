@@ -1,0 +1,7 @@
+* Overview
+This repository was created to host my Digital Image Processing course's final project. I've implemented a face-swap algorithm to be performed on real-time upon the frames captured by my laptop's camera.
+
+* Algorithm - brief description
+The face-swap effect is, in reality, the result of a series of techniques put together to achieve such outcome. I'll briefly discuss each one of them to allow for us to have a better understanding of the produced results.
+** Facial landmarks detection
+The first step in the face-swapping algorithm is to use a method of facial landmark detection. It is common to do so using the Haars classifiers, which can be promptly done using OpenCV's CascadeClassifier class. However, here I've used the face shape detector provided by the Dlib library. In order to use it, we need a file commonly found under the name of /shape_predictor_68_face_landmarks.dat/, which contains data regarding facial landmarks used to train our detector (which perform regression on this data to be able and find the landmarks on unkown images). In the picture below we can see an example of landmark detection.
