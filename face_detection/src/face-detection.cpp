@@ -1,5 +1,6 @@
 /* The landmark detection and drawing parts of this code are inspired by a very similar code developed by anishakd4. */
 /* The Delaunay Triangulation and the face copying portions of the code were, mostly, taken from
+
  Learnopencv's "Face swap" (https://github.com/spmallick/learnopencv/tree/master/FaceSwap) repository" */
 
 #include <algorithm>
@@ -285,7 +286,8 @@ int main(int argc, char *argv[])
 	  cv::Mat output;
 	  cv::seamlessClone(copied_image, destination_image, mask, center, output, cv::NORMAL_CLONE);
 
-	  cv::imshow("cloned", output);
+	  cv::imshow("blended", output);
+	  /* cv::imshow("raw-copy", copied_image); */
 	}
 
 	cv::imshow("landmarks", image);

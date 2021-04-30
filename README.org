@@ -15,7 +15,7 @@ After obtaining the landmarks, we proceed to extract the "hull" (i.e.: the conto
   cv::convexHull(element, hull_index, false, false);
 #+end_src
 
-In the above snippet, *element* is a set of points representing the detected landmarks and *hull_index* is the index of the landmark points that form the hull (or the contour); the other two parameters simply control the behavior of the method: they tell if the detection is to be performed clockwise (not the case here) and if the latter flag is set to #+begin_src cpp true #+end_src, the hull points (instead of their indexes) are returned.
+In the above snippet, *element* is a set of points representing the detected landmarks and *hull_index* is the index of the landmark points that form the hull (or the contour); the other two parameters simply control the behavior of the method: they tell if the detection is to be performed clockwise (not the case here) and if the latter flag is set to /true/, the hull points (instead of their indexes) are returned.
 
 Once the hull for the destination face is obtained, we proceed to the Delaunay triangulation.
 
@@ -26,4 +26,24 @@ This process seems to be more complex than the previous, but it works in a simpl
 After finding the Delaunay triangles and performing the affine transformation, we obtain a mask as the one shown in the figure below; this mask, by its turn, is applied to the source image to mix it with the destination image.
 
 [[./figures/mask.png]]
+
+** Raw patching and seamless cloning
+
+As mentioned above, we can simply "paste" the source face on the destination image; however, the results is not as good as we'd expect. To workaround this issue, we can use an OpenCV method that "smoothly" blends the two faces toghether: seamlessClone. Its usage in the code in as follows:
+
+#+begin_src cpp
+  cv::Mat output;
+  cv::seamlessClone(copied_image, destination_image, mask, center, output, cv::NORMAL_CLONE);
+  cv::imshow("blended", output);
+#+end_src
+
+In the above code, the first argument is the raw-copied image and the second is the destination frame (unaltered destination frame); the third one is the mask, shown in the preceeding sub-section: it's the responsible for making the smooth bleding between the two faces, and this blending will be output on the *output* image, centered around *center*. The last parameter controls the kind of cloning (for more info about this, please check the method's documentation). Then, the blended output is shown on screen.
+
+The two figures below show, side by side, the result of a simple, raw-copying, and of a seamless cloning procedure: the results produced by the latter are much smoother (specially around the transition edges) than those produced by the former.
+
+|---------------------------------------------+--------------------------------|
+| Result of the simple face-copying procedure | Result of the seamless cloning |
+|---------------------------------------------+--------------------------------|
+| [[./figures/raw-copy.png]]                      | [[./figures/swap-final-2.png]]     |
+|---------------------------------------------+--------------------------------|
 
