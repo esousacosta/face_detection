@@ -11,4 +11,19 @@ The first step in the face-swapping algorithm is to use a method of facial landm
 ** Finding the "Hull"
 After obtaining the landmarks, we proceed to extract the "hull" (i.e.: the contour of the set of facil landmark points), as the points from the interior do not interest us at this second stage. In the previous figure, the hull would be a shape connecting all of the exterior red points, ignoring the interior ones. To calculate the hull of our landmark, we can use OpenCV's convexHull function as shown below:
 
+#+begin_src cpp
+  cv::convexHull(element, hull_index, false, false);
+#+end_src
+
+In the above snippet, *element* is a set of points representing the detected landmarks and *hull_index* is the index of the landmark points that form the hull (or the contour); the other two parameters simply control the behavior of the method: they tell if the detection is to be performed clockwise (not the case here) and if the latter flag is set to #+begin_src cpp true #+end_src, the hull points (instead of their indexes) are returned.
+
+Once the hull for the destination face is obtained, we proceed to the Delaunay triangulation.
+
+** Delaunay triangulation and affine transformation.
+
+This process seems to be more complex than the previous, but it works in a simple manner: the hull region is subdivided into smaller zones, triangular zones, which allow the faces to be overlap better in the final figure. The smaller triangles inside the hull zone are defined for each to keep a small region of the face, containing one of its key features; this helps warp the source face when "patching" it onto the destination. After performing the triangulation, it is still needed to perform a affine transformation to align the triangles from the source face with those on the destination face. We could, of course, simply toss one on top of the other, but the result wouldn't be as smooth as the one obtained via this kind of transformation.
+
+After finding the Delaunay triangles and performing the affine transformation, we obtain a mask as the one shown in the figure below; this mask, by its turn, is applied to the source image to mix it with the destination image.
+
+[[./figures/mask.png]]
 
