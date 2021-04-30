@@ -47,3 +47,6 @@ The two figures below show, side by side, the result of a simple, raw-copying, a
 | [[./figures/raw-copy.png]]                      | [[./figures/swap-final-2.png]]     |
 |---------------------------------------------+--------------------------------|
 
+** Final comments
+
+The code was adapted from the algorithm I found at anishakd4's Github page, and from the algorithm at Learnopencv's "Face swap" repository. I modified those to fit my needs (e.g.: to apply the face swapping effect to a real-time captured frame containing two faces in it), and made a few modifications to make them more efficient in what concerns memory allocation - as I was no longer performing a single face swap, but several per minute.
