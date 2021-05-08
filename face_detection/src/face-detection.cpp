@@ -30,7 +30,9 @@ std::vector<cv::Point2f> drawFaceLandmarks(cv::Mat &image, dlib::full_object_det
 	int y = faceLandmark.part(i).y();
 	std::string text = std::to_string(i+1);
 	points.push_back(cv::Point2f(x, y));
-	//Draw a small circle at face landmark over the image using opencv
+
+	//Draw a small circle at face landmark over the image using opencv. Uncommenting this will result
+	// in the apparition of small circles on the patched face.
 	/* circle(image, cv::Point(x, y), 1, cv::Scalar(0, 0, 255), 2, cv::LINE_AA ); */
 	//Draw text at face landmark to show index of current face landmark over the image using opencv
 	/* putText(image, text, cv::Point(x, y), cv::FONT_HERSHEY_SIMPLEX, 0.3, cv::Scalar(255, 0, 0), 1); */
@@ -56,9 +58,6 @@ static void calculateDelaunayTriangles(cv::Rect rectangle, std::vector<cv::Point
 
 	for( int i = 0; i < triangleList.size(); i++ ) {
 	  t = triangleList[i];
-	  // pt.push_back(cv::Point2f(t[0], t[1]));//pt0
-	  // pt.push_back(cv::Point2f(t[2], t[3]));//pt1
-	  // pt.push_back(cv::Point2f(t[4], t[5]));//pt2
 	  pt[0] = cv::Point2f(t[0], t[1]);
 	  pt[1] = cv::Point2f(t[2], t[3]);
 	  pt[2] = cv::Point2f(t[4], t[5]);
@@ -77,10 +76,7 @@ static void calculateDelaunayTriangles(cv::Rect rectangle, std::vector<cv::Point
 	}
 
 	triangleList.clear();
-	// pt.clear();
-	// ind.clear();
   }
-
 }
 
 
@@ -108,11 +104,9 @@ void warpTriangle(cv::Mat &img1, cv::Mat &img2, std::vector<cv::Point2f> &t1, st
   std::vector<cv::Point> t2RectInt;
   for(int i = 0; i < 3; i++)
 	{
-
 	  t1Rect.push_back( cv::Point2f( t1[i].x - r1.x, t1[i].y -  r1.y) );
 	  t2Rect.push_back( cv::Point2f( t2[i].x - r2.x, t2[i].y - r2.y) );
 	  t2RectInt.push_back( cv::Point(t2[i].x - r2.x, t2[i].y - r2.y) ); // for fillConvexPoly
-
 	}
 	
   // Get mask by filling triangle
@@ -134,7 +128,6 @@ void warpTriangle(cv::Mat &img1, cv::Mat &img2, std::vector<cv::Point2f> &t1, st
 	
   // Here I'm finally patching the second image by adding the content from the
   // original one. This is done for each of the delaunay triangle's regions.
-
   multiply(img2Rect, mask, img2Rect);
   multiply(img2(r2), cv::Scalar(1.0,1.0,1.0) - mask, img2(r2));
   img2(r2) = img2(r2) + img2Rect;
@@ -173,9 +166,6 @@ int main(int argc, char *argv[])
 
 
   dlib::deserialize("../../dlibAndModel/shape_predictor_68_face_landmarks.dat") >> faceLandmarkDetector;
-
-  // // Loading the cascade classifier trained  on the data from the .xml file
-  // cv::CascadeClassifier face_cascade = cv::CascadeClassifier("/home/bacamartes/Documents/UFRN/2020_2/PDI/projeto_final/face_detection/haarcascade_frontalface_default.xml");
 
   // Reading the input image
   cv::VideoCapture cap ("/dev/video0");
