@@ -172,23 +172,18 @@ int main(int argc, char *argv[])
 
   while (true) {
 	cap.read(image);
-	image.copyTo(copied_image);//cv::Mat::zeros(copied_image.rows, copied_image.cols, CV_32F);//image.clone();
+	image.copyTo(copied_image);
 	image.copyTo(destination_image);
-	// destination_image = cv::Mat::zeros(copied_image.rows, copied_image.cols, CV_32F);//image.clone();
 
 	// Checking if anything was captured by the camera
 	if (!image.data)
 	  std::cerr << "Couldn't open the requested image. Exiting!" << std::endl;
 
 	// Convert the image from the openCV format to dlib format
-
 	IplImage ipl_img = cvIplImage(image);
 	dlib::cv_image<dlib::bgr_pixel> dlibImage(&ipl_img);
-	// dlib::cv_image<dlib::bgr_pixel> dlibImage(&image);
-	// cv::cvtColor(image, gray_image, cv::COLOR_BGR2GRAY);
 
 	//Detect faces in the image and print the number of faces detected
-    // std::vector<dlib::rectangle> faces = faceDetector(dlibImage);
 	faces = faceDetector(dlibImage);
 	std::cout << "Number of faces detected:" << faces.size() << std::endl;
 
@@ -214,9 +209,9 @@ int main(int argc, char *argv[])
 	if (faces.size() == 2) {
 	  image.convertTo(image, CV_32F);
 	  copied_image.convertTo(copied_image, CV_32F);
-	  // destination_image.convertTo(destination_image, CV_32F);
 
 	  std::vector<int> hull_index;
+
 	  // This for is not necessary
 	  for (auto element: points) {
 		cv::convexHull(element, hull_index, false, false);
@@ -236,14 +231,10 @@ int main(int argc, char *argv[])
 
 	  // Now we need to apply affine transformation to delaunay triangles in order
 	  // to swap the correct points between the two faces.
-
 	  for (int i = 0; i < dt.size(); i++) {
-
 		for (int j = 0; j < 3; j++) {
-
 		  t1.push_back(hulls[0][dt[i][j]]);
 		  t2.push_back(hulls[1][dt[i][j]]);
-		  
 		}
 		// After finishing to collect the equivalente points of both contours,
 		// it's time to apply the warping to the copy of the second image.
@@ -254,7 +245,7 @@ int main(int argc, char *argv[])
 
 
 
-	  // Calculate mask
+	  // Calculate the mask
 	  for(int i = 0; i < hulls[1].size(); i++)
 		{
 		  cv::Point pt(hulls[1][i].x, hulls[1][i].y);
