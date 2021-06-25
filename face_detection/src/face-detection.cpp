@@ -140,22 +140,22 @@ void warpTriangle(cv::Mat &img1, cv::Mat &img2, std::vector<cv::Point2f> &t1, st
 
 int main(int argc, char *argv[])
 {
-  static cv::Mat image, gray_image;
+  cv::Mat image, gray_image;
   int k = 0;
-  static std::vector<dlib::rectangle> faces;
-  static std::vector<cv::Mat> aux_matrix(2);
-  static std::vector<dlib::full_object_detection> facelandmarks;
-  static std::vector< std::vector<cv::Point2f> > points;
-  static std::vector< std::vector<cv::Point2f> > hulls;
-  static std::vector<cv::Point2f> hull;
-  static std::vector< std::vector<int> > dt;
-  static std::vector<cv::Point> hull8U;
-  static std::vector<cv::Point2f> t1, t2;
-  static std::vector<cv::Point2f> point1, point2;
+  std::vector<dlib::rectangle> faces;
+  std::vector<cv::Mat> aux_matrix(2);
+  std::vector<dlib::full_object_detection> facelandmarks;
+  std::vector< std::vector<cv::Point2f> > points;
+  std::vector< std::vector<cv::Point2f> > hulls;
+  std::vector<cv::Point2f> hull;
+  std::vector< std::vector<int> > dt;
+  std::vector<cv::Point> hull8U;
+  std::vector<cv::Point2f> t1, t2;
+  std::vector<cv::Point2f> point1, point2;
   cv::Mat mask;
 
-  static cv::Mat copied_image;
-  static cv::Mat destination_image;
+  cv::Mat copied_image;
+  cv::Mat destination_image;
   
   //Load the dlib face detector
   dlib::frontal_face_detector faceDetector = dlib::get_frontal_face_detector();
